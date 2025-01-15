@@ -8,6 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "export/view/export_view_top_bar.h"
 
 #include "export/view/export_view_content.h"
+#include "ui/text/text_utilities.h"
 #include "ui/widgets/continuous_sliders.h"
 #include "ui/widgets/labels.h"
 #include "ui/widgets/buttons.h"
@@ -39,14 +40,12 @@ void TopBar::updateData(Content &&content) {
 		return;
 	}
 	const auto &row = content.rows[0];
-	const auto clean = &TextUtilities::Clean;
-	_info->setRichText(textcmdStartSemibold()
-		+ clean(tr::lng_export_progress_title(tr::now))
-		+ textcmdStopSemibold()
-		+ QString::fromUtf8(" \xe2\x80\x93 ")
-		+ clean(row.label)
-		+ ' '
-		+ textcmdLink(1, clean(row.info)));
+	_info->setMarkedText(
+		Ui::Text::Bold(tr::lng_export_progress_title(tr::now))
+			.append(" \xe2\x80\x93 ")
+			.append(row.label)
+			.append(' ')
+			.append(Ui::Text::Colorized(row.info)));
 	_progress->setValue(row.progress);
 }
 
@@ -63,7 +62,7 @@ void TopBar::resizeEvent(QResizeEvent *e) {
 }
 
 void TopBar::paintEvent(QPaintEvent *e) {
-	Painter p(this);
+	auto p = QPainter(this);
 	auto fill = e->rect().intersected(
 		QRect(0, 0, width(), st::mediaPlayerHeight));
 	if (!fill.isEmpty()) {

@@ -23,31 +23,38 @@ constexpr auto kRequestEach = 30 * crl::time(1000);
 
 SendAsPeers::SendAsPeers(not_null<Session*> session)
 : _session(session)
-, _onlyMe({ session->user() }) {
+, _onlyMe({ { .peer = session->user(), .premiumRequired = false } }) {
 	_session->changes().peerUpdates(
 		Data::PeerUpdate::Flag::Rights
 	) | rpl::map([=](const Data::PeerUpdate &update) {
 		const auto peer = update.peer;
 		const auto channel = peer->asChannel();
-		return std::tuple(
-			peer,
-			peer->amAnonymous(),
-			channel ? channel->isPublic() : false);
+		const auto bits = 0
+			| (peer->amAnonymous() ? (1 << 0) : 0)
+			| ((channel && channel->isPublic()) ? (1 << 1) : 0)
+			| ((channel && channel->addsSignature()) ? (1 << 2) : 0)
+			| ((channel && channel->signatureProfiles()) ? (1 << 3) : 0);
+		return std::tuple(peer, bits);
 	}) | rpl::distinct_until_changed(
-	) | rpl::filter([=](not_null<PeerData*> peer, bool, bool) {
-		return _lists.contains(peer);
-	}) | rpl::start_with_next([=](not_null<PeerData*> peer, bool, bool) {
+	) | rpl::filter([=](not_null<PeerData*> peer, int) {
+		return _lists.contains(peer) || _lastRequestTime.contains(peer);
+	}) | rpl::start_with_next([=](not_null<PeerData*> peer, int) {
 		refresh(peer, true);
 	}, _lifetime);
 }
 
 bool SendAsPeers::shouldChoose(not_null<PeerData*> peer) {
 	refresh(peer);
-	return peer->canWrite() && (list(peer).size() > 1);
+	const auto channel = peer->asBroadcast();
+	return Data::CanSendAnything(peer, false)
+		&& (list(peer).size() > 1)
+		&& (!channel
+			|| channel->addsSignature()
+			|| channel->signatureProfiles());
 }
 
 void SendAsPeers::refresh(not_null<PeerData*> peer, bool force) {
-	if (!peer->isMegagroup()) {
+	if (!peer->isChannel()) {
 		return;
 	}
 	const auto now = crl::now();
@@ -60,7 +67,7 @@ void SendAsPeers::refresh(not_null<PeerData*> peer, bool force) {
 	request(peer);
 }
 
-const std::vector<not_null<PeerData*>> &SendAsPeers::list(
+const std::vector<SendAsPeer> &SendAsPeers::list(
 		not_null<PeerData*> peer) const {
 	const auto i = _lists.find(peer);
 	return (i != end(_lists)) ? i->second : _onlyMe;
@@ -108,37 +115,50 @@ not_null<PeerData*> SendAsPeers::resolveChosen(
 
 not_null<PeerData*> SendAsPeers::ResolveChosen(
 		not_null<PeerData*> peer,
-		const std::vector<not_null<PeerData*>> &list,
+		const std::vector<SendAsPeer> &list,
 		PeerId chosen) {
-	const auto i = ranges::find(list, chosen, &PeerData::id);
-	return (i != end(list))
-		? (*i)
-		: !list.empty()
-		? list.front()
-		: (peer->isMegagroup() && peer->amAnonymous())
+	const auto fallback = peer->amAnonymous()
 		? peer
 		: peer->session().user();
+	if (!chosen) {
+		chosen = fallback->id;
+	}
+	const auto i = ranges::find(list, chosen, [](const SendAsPeer &as) {
+		return as.peer->id;
+	});
+	return (i != end(list))
+		? i->peer
+		: !list.empty()
+		? list.front().peer
+		: fallback;
 }
 
 void SendAsPeers::request(not_null<PeerData*> peer) {
 	peer->session().api().request(MTPchannels_GetSendAs(
 		peer->input
 	)).done([=](const MTPchannels_SendAsPeers &result) {
-		auto list = std::vector<not_null<PeerData*>>();
+		auto parsed = std::vector<SendAsPeer>();
 		auto &owner = peer->owner();
 		result.match([&](const MTPDchannels_sendAsPeers &data) {
 			owner.processUsers(data.vusers());
 			owner.processChats(data.vchats());
-			for (const auto &id : data.vpeers().v) {
-				if (const auto peer = owner.peerLoaded(peerFromMTP(id))) {
-					list.push_back(peer);
+			const auto &list = data.vpeers().v;
+			parsed.reserve(list.size());
+			for (const auto &as : list) {
+				const auto &data = as.data();
+				const auto peerId = peerFromMTP(data.vpeer());
+				if (const auto peer = owner.peerLoaded(peerId)) {
+					parsed.push_back({
+						.peer = peer,
+						.premiumRequired = data.is_premium_required(),
+					});
 				}
 			}
 		});
-		if (list.size() > 1) {
+		if (parsed.size() > 1) {
 			auto &now = _lists[peer];
-			if (now != list) {
-				now = std::move(list);
+			if (now != parsed) {
+				now = std::move(parsed);
 				_updates.fire_copy(peer);
 			}
 		} else if (const auto i = _lists.find(peer); i != end(_lists)) {

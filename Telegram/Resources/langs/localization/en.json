@@ -1,9 +1,9 @@
-﻿{
+{
     "lng_intro_about2": "Welcome to the 64Gram Desktop app.\nIt's fast and secure.",
 
     "lng_settings_enhanced": "Enhanced Settings",
     "lng_settings_network": "Network",
-    "lng_settings_net_speed_boost": "Upload speed boost",
+    "lng_settings_net_upload_speed_boost": "Upload speed boost",
     "lng_settings_show_message_id": "Show message ID",
     "lng_settings_button": "Button",
     "lng_settings_show_emoji_button_as_text": "Show emoji button as text",
@@ -21,17 +21,30 @@
     "lng_settings_auto_unmute": "Auto unmute",
     "lng_settings_other": "Other",
     "lng_settings_hide_all_chats": "Hide \"All chats\" folder",
+    "lng_settings_replace_edit_button": "Replace \"Edit\" button by Saved Messages",
     "lng_settings_disable_link_warning": "Disable open link warning",
+    "lng_settings_hide_messages": "Hide messages from blocked user",
+    "lng_settings_disable_premium_animation": "Disable Premium Animation",
+    "lng_settings_disable_global_search": "Disable global search",
+    "lng_settings_show_group_sender_avatar": "Show sender's avatar in groups",
+    "lng_settings_show_seconds": "Time with seconds",
+    "lng_settings_hide_counter": "Hide online users counter",
+    "lng_settings_hide_stories": "Hide Stories",
+    "lng_settings_screen_shot_mode": "Screenshot Mode",
     "lng_settings_restart_hint": "WARNING: Changing options that are colored in red will take effect only after the app restarts.",
 
     "lng_settings_skip_message": "Skip to next unread chat",
     "lng_settings_skip_message_desc": "Note: Allow ALT+↑/↓ shortcut to skip to next unread chat",
+
+    "lng_settings_recent_display_limit": "Recent sticker display limit",
+    "lng_settings_recent_display_limit_default": "Default (20)",
 
     "lng_net_speed_boost_title": "Network speed boost",
     "lng_net_speed_boost_desc": "Warning: changing this parameter to high values on slow networks can make it even worse. Use it at your own risk.",
     "lng_show_emoji_button_as_text_desc": "Note: If you can't see an emoji button, please turn on this option.",
     "lng_radio_controller_desc": "Note: Radio controller is an experimental bot for controlling your music streaming session.",
     "lng_auto_unmute_desc": "Note: Auto unmute when you've joined the voice chat.",
+    "lng_settings_hide_messages_desc": "Note: IT IS NOT REALLY HIDE! Messages are still available to view, but text will be converted to Spoiler and media won't auto download.",
 
     "lng_net_speed_boost_default": "Disabled",
     "lng_net_speed_boost_slight": "Slight",
@@ -74,7 +87,7 @@
     "lng_sure_upgrade_group": "Are you sure you want to upgrade this group to supergroup?",
     "lng_chat_upgrade_warning": "Note: This action can not be undone",
 
-    "lng_user_not_found": "404 User not found.\nNote: You must have \"seen\" that user before open this link.",
+    "lng_user_not_found": "404 - User not found.\nNote: You must have \"seen\" the user before opening this link.",
 
     "lng_settings_always_delete_for": "Always select delete for",
     "lng_settings_delete_disabled": "Disabled",
@@ -92,6 +105,8 @@
     "lng_context_repeat_msg_no_fwd": "Repeat as copy",
     "lng_context_forward_msg_no_quote": "Forward as copy",
     "lng_forward_to_saved_message": "Forward to Saved",
+    "lng_context_repeater": "Repeater",
+    "lng_context_forward": "Forward",
 
     "lng_settings_enable_hd_video": "Higher video bitrate",
     "lng_hd_video_hint": "Video bitrate is changed! Rejoin a voice chat if you've already joined.",
@@ -112,8 +127,13 @@
     "lng_pinned_message_show": "Show pinned message",
     "lng_pinned_message_hide": "Hide pinned message",
     "lng_pinned_message_view": "View pinned message",
+    "lng_go_to_first_message": "Go to first message",
 
     "lng_proxy_remove_all": "Remove all proxies",
     
-    "lng_copy_profile_id": "ID copied to clipboard."
+    "lng_copy_profile_id": "ID copied to clipboard.",
+
+    "lng_group_requests_ban": "Ban",
+
+    "lng_blocked_user_hint": "[Blocked User Message]\n"
 }

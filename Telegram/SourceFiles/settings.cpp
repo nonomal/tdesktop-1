@@ -18,7 +18,7 @@ QByteArray gAlphaPrivateKey;
 
 bool gManyInstance = false;
 QString gKeyFile;
-QString gWorkingDir, gExeDir, gExeName;
+QString gWorkingDir;
 
 QStringList gSendPaths;
 QString gStartUrl;
@@ -29,8 +29,6 @@ bool gStartMinimized = false;
 bool gStartInTray = false;
 bool gAutoStart = false;
 bool gSendToMenu = false;
-bool gUseExternalVideoPlayer = false;
-bool gUseFreeType = false;
 bool gAutoUpdate = true;
 LaunchMode gLaunchMode = LaunchModeNormal;
 bool gSeenTrayTooltip = false;
@@ -46,9 +44,6 @@ uint32 gConnectionsInSession = 1;
 QByteArray gLocalSalt;
 int gScreenScale = style::kScaleAuto;
 int gConfigScale = style::kScaleAuto;
-
-QString gDateFormat = qsl("dd.MM.yy");
-QString gTimeFormat = qsl("hh:mm");
 
 RecentStickerPreload gRecentStickersPreload;
 RecentStickerPack gRecentStickers;
@@ -71,25 +66,10 @@ int32 gAutoDownloadAudio = 0;
 int32 gAutoDownloadGif = 0;
 
 bool gEnhancedFirstRun = true;
-bool gShowMessagesID = false;
-bool gShowEmojiButtonAsText = false;
-bool gShowRepeaterOption = false;
-bool gRepeaterReplyToOrigMsg = false;
-bool gDisableCloudDraftSync = false;
-bool gHideClassicFwd = false;
-bool gShowPhoneNumber = true;
-bool gShowScheduledButton = false;
-bool gHideFilterAllChats = false;
-bool gStereoMode = false;
-bool gAutoUnmute = false;
 bool gVoiceChatPinned = false;
-bool gHDVideo = false;
-bool gSkipSc = false;
-bool gDisableLinkWarning = false;
-QString gRadioController;
-int gVoiceChatBitrate = 0;
+QList<int64> gBlockList;
+EnhancedSetting gEnhancedOptions;
 
-int gNetSpeedBoost = 0;
 int gNetRequestsCount = 2;
 int gNetUploadSessionsCount = 2;
 int gNetUploadRequestInterval = 500;

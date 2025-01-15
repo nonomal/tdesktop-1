@@ -10,20 +10,20 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "lang/lang_keys.h"
 #include "ui/widgets/checkbox.h"
-#include "ui/widgets/input_fields.h"
+#include "ui/widgets/fields/input_field.h"
 #include "ui/widgets/labels.h"
 #include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "ui/boxes/confirm_box.h"
+#include "core/application.h"
 #include "core/enhanced_settings.h"
 #include "settings/settings_enhanced.h"
-#include "app.h"
 
 NetBoostBox::NetBoostBox(QWidget *parent) {
 }
 
 void NetBoostBox::prepare() {
-	setTitle(tr::lng_net_speed_boost_title());
+	setTitle(tr::lng_settings_net_upload_speed_boost());
 
 	addButton(tr::lng_settings_save(), [=] { save(); });
 	addButton(tr::lng_cancel(), [=] { closeBox(); });
@@ -37,7 +37,8 @@ void NetBoostBox::prepare() {
 
 	y += _description->height() + st::boxMediumSkip;
 
-	_boostGroup = std::make_shared<Ui::RadiobuttonGroup>(cNetSpeedBoost());
+	_boostGroup = std::make_shared<Ui::RadiobuttonGroup>(GetEnhancedInt("net_speed_boost"));
+	
 
 	for (int i = 0; i <= 3; i++) {
 		const auto button = Ui::CreateChild<Ui::Radiobutton>(
@@ -69,20 +70,21 @@ QString NetBoostBox::BoostLabel(int boost) {
 }
 
 void NetBoostBox::save() {
-	const auto changeBoost = [=] {
-		SetNetworkBoost(_boostGroup->value());
+	const auto changeBoost = [=](Fn<void()> &&close) {
+		SetNetworkBoost(_boostGroup->current());
 		EnhancedSettings::Write();
-		App::restart();
+		Core::Restart();
 	};
 
 	const auto box = std::make_shared<QPointer<BoxContent>>();
 
 	*box = getDelegate()->show(
-			Box<Ui::ConfirmBox>(
-					tr::lng_net_boost_restart_desc(tr::now),
-					tr::lng_settings_restart_now(tr::now),
-					tr::lng_cancel(tr::now),
-					changeBoost));
+		Ui::MakeConfirmBox({
+				.text = tr::lng_net_boost_restart_desc(tr::now),
+				.confirmed = changeBoost,
+				.confirmText = tr::lng_settings_restart_now(tr::now),
+				.cancelText = tr::lng_cancel(tr::now),
+		}));
 }
 
 AlwaysDeleteBox::AlwaysDeleteBox(QWidget *parent) {
@@ -94,7 +96,7 @@ void AlwaysDeleteBox::prepare() {
 	addButton(tr::lng_box_ok(), [=] { closeBox(); });
 
 	auto y = st::boxOptionListPadding.top();
-	_optionGroup = std::make_shared<Ui::RadiobuttonGroup>(cAlwaysDeleteFor());
+	_optionGroup = std::make_shared<Ui::RadiobuttonGroup>(GetEnhancedInt("always_delete_for"));
 
 	for (int i = 0; i <= 3; i++) {
 		const auto button = Ui::CreateChild<Ui::Radiobutton>(
@@ -126,7 +128,7 @@ QString AlwaysDeleteBox::DeleteLabel(int boost) {
 }
 
 void AlwaysDeleteBox::save() {
-	SetAlwaysDelete(_optionGroup->value());
+	SetEnhancedValue("always_delete_for", _optionGroup->current());
 	EnhancedSettings::Write();
 	closeBox();
 }
@@ -141,7 +143,7 @@ void RadioController::prepare() {
 	addButton(tr::lng_settings_save(), [=] { save(); });
 	addButton(tr::lng_cancel(), [=] { closeBox(); });
 
-	_url->setText(cRadioController());
+	_url->setText(GetEnhancedString("radio_controller"));
 
 	setDimensions(st::boxWidth, _url->height());
 }
@@ -163,7 +165,7 @@ void RadioController::save() {
 	if (host == "") {
 		host = "http://localhost:2468";
 	}
-	cSetRadioController(host);
+	SetEnhancedValue("radio_controller", host);
 	EnhancedSettings::Write();
 	closeBox();
 }
@@ -186,7 +188,7 @@ void BitrateController::prepare() {
 
 	y += _description->height() + st::boxMediumSkip;
 
-	_bitrateGroup = std::make_shared<Ui::RadiobuttonGroup>(cVoiceChatBitrate());
+	_bitrateGroup = std::make_shared<Ui::RadiobuttonGroup>(GetEnhancedInt("bitrate"));
 
 	for (int i = 0; i <= 7; i++) {
 		const auto button = Ui::CreateChild<Ui::Radiobutton>(
@@ -226,8 +228,58 @@ QString BitrateController::BitrateLabel(int boost) {
 }
 
 void BitrateController::save() {
-	SetBitrate(_bitrateGroup->value());
+	SetEnhancedValue("bitrate", _bitrateGroup->current());
 	EnhancedSettings::Write();
 	Ui::Toast::Show(tr::lng_bitrate_controller_hint(tr::now));
+	closeBox();
+}
+
+RecentDisplayLimitController::RecentDisplayLimitController(QWidget *parent) {
+}
+
+void RecentDisplayLimitController::prepare() {
+	setTitle(tr::lng_settings_recent_display_limit());
+
+	addButton(tr::lng_settings_save(), [=] { save(); });
+	addButton(tr::lng_cancel(), [=] { closeBox(); });
+
+	auto y = st::boxOptionListPadding.top();
+
+	_optionGroup = std::make_shared<Ui::RadiobuttonGroup>(GetEnhancedInt("recent_display_limit"));
+
+	for (int i = 0; i <= 5; i++) {
+		const auto button = Ui::CreateChild<Ui::Radiobutton>(
+				this,
+				_optionGroup,
+				i,
+				Label(i),
+				st::autolockButton);
+		button->moveToLeft(st::boxPadding.left(), y);
+		y += button->heightNoMargins() + st::boxOptionListSkip;
+	}
+	showChildren();
+	setDimensions(st::boxWidth, y);
+}
+
+QString RecentDisplayLimitController::Label(int limit) {
+	switch (limit) {
+		case 1:
+			return QString("40");
+		case 2:
+			return QString("60");
+		case 3:
+			return QString("80");
+		case 4:
+			return QString("100");
+		case 5:
+			return QString("120");
+		default:
+			return tr::lng_settings_recent_display_limit_default(tr::now);
+	}
+}
+
+void RecentDisplayLimitController::save() {
+	SetEnhancedValue("recent_display_limit", _optionGroup->current());
+	EnhancedSettings::Write();
 	closeBox();
 }

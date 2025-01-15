@@ -9,6 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "data/data_user.h"
 #include "data/data_send_action.h"
+#include "data/data_forum_topic.h"
 #include "data/data_session.h"
 #include "main/main_session.h"
 #include "history/history.h"
@@ -16,6 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lang/lang_keys.h"
 #include "ui/effects/animations.h"
 #include "ui/text/text_options.h"
+#include "ui/painter.h"
 #include "styles/style_dialogs.h"
 
 namespace HistoryView {
@@ -38,11 +40,18 @@ constexpr auto kStatusShowClientsideSpeaking = 6 * crl::time(1000);
 
 } // namespace
 
-SendActionPainter::SendActionPainter(not_null<History*> history)
+SendActionPainter::SendActionPainter(
+	not_null<History*> history,
+	MsgId rootId)
 : _history(history)
+, _rootId(rootId)
 , _weak(&_history->session())
 , _st(st::dialogsTextStyle)
 , _sendActionText(st::dialogsTextWidthMin) {
+}
+
+void SendActionPainter::setTopic(Data::ForumTopic *topic) {
+	_topic = topic;
 }
 
 bool SendActionPainter::updateNeedsAnimating(
@@ -141,8 +150,8 @@ bool SendActionPainter::paint(
 		const auto extraAnimationWidth = _animationLeft
 			? animationWidth * 2
 			: 0;
-		const auto left =
-			(availableWidth < _animationLeft + extraAnimationWidth)
+		const auto left
+			= (availableWidth < _animationLeft + extraAnimationWidth)
 				? 0
 				: _animationLeft;
 		_sendActionAnimation.paint(
@@ -168,7 +177,7 @@ bool SendActionPainter::paint(
 }
 
 void SendActionPainter::paintSpeaking(
-		Painter &p,
+		QPainter &p,
 		int x,
 		int y,
 		int outerWidth,
@@ -233,16 +242,16 @@ bool SendActionPainter::updateNeedsAnimating(crl::time now, bool force) {
 			newTypingString = tr::lng_users_typing(
 				tr::now,
 				lt_user,
-				begin(_typing)->first->firstName,
+				begin(_typing)->first->name(),
 				lt_second_user,
-				(end(_typing) - 1)->first->firstName);
+				(end(_typing) - 1)->first->name());
 		} else if (typingCount) {
 			newTypingString = _history->peer->isUser()
 				? tr::lng_typing(tr::now)
 				: tr::lng_user_typing(
 					tr::now,
 					lt_user,
-					begin(_typing)->first->firstName);
+					begin(_typing)->first->name());
 		} else if (!_sendActions.empty()) {
 			// Handles all actions except game playing.
 			using Type = Api::SendProgressType;
@@ -289,7 +298,7 @@ bool SendActionPainter::updateNeedsAnimating(crl::time now, bool force) {
 				const auto isNamed = !_history->peer->isUser();
 				newTypingString = sendActionString(
 					action.type,
-					isNamed ? user->firstName : QString());
+					isNamed ? user->name() : QString());
 				if (!newTypingString.isEmpty()) {
 					_sendActionAnimation.start(action.type);
 
@@ -335,16 +344,16 @@ bool SendActionPainter::updateNeedsAnimating(crl::time now, bool force) {
 					newTypingString = tr::lng_users_playing_game(
 						tr::now,
 						lt_user,
-						begin(_sendActions)->first->firstName,
+						begin(_sendActions)->first->name(),
 						lt_second_user,
-						(end(_sendActions) - 1)->first->firstName);
+						(end(_sendActions) - 1)->first->name());
 				} else {
 					newTypingString = _history->peer->isUser()
 						? tr::lng_playing_game(tr::now)
 						: tr::lng_user_playing_game(
 							tr::now,
 							lt_user,
-							begin(_sendActions)->first->firstName);
+							begin(_sendActions)->first->name());
 				}
 				_sendActionAnimation.start(Type::PlayGame);
 			}
@@ -381,7 +390,7 @@ bool SendActionPainter::updateNeedsAnimating(crl::time now, bool force) {
 			st::normalFont->height,
 			st::dialogsMiniPreviewTop + st::dialogsMiniPreview);
 		_history->peer->owner().sendActionManager().updateAnimation({
-			_history,
+			_topic ? ((Data::Thread*)_topic) : _history,
 			0,
 			_sendActionAnimation.width() + _animationLeft,
 			height,

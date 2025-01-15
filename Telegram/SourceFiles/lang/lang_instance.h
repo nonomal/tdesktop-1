@@ -7,8 +7,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
-#include <rpl/producer.h>
 #include "lang_auto.h"
+#include "base/const_string.h"
 #include "base/weak_ptr.h"
 
 namespace Lang {
@@ -31,8 +31,6 @@ inline bool operator!=(const Language &a, const Language &b) {
 	return !(a == b);
 }
 
-QString DefaultLanguageId();
-QString LanguageIdOrDefault(const QString &id);
 QString CloudLangPackName();
 QString CustomLanguageId();
 Language DefaultLanguage();
@@ -76,6 +74,7 @@ public:
 	QByteArray serialize() const;
 	void fillFromSerialized(const QByteArray &data, int dataAppVersion);
 	void applyValue(const QByteArray &key, const QByteArray &value);
+	void resetValue(const QByteArray &key);
 	bool supportChoosingStickerReplacement() const;
 	int rightIndexChoosingStickerReplacement(bool named) const;
 
@@ -112,7 +111,6 @@ private:
 	void setBaseId(const QString &baseId, const QString &pluralId);
 
 	void applyDifferenceToMe(const MTPDlangPackDifference &difference);
-	void resetValue(const QByteArray &key);
 	void reset(const Language &language);
 	void fillFromCustomContent(
 		const QString &absolutePath,

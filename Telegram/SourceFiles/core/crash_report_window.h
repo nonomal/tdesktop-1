@@ -20,10 +20,6 @@ namespace MTP {
 struct ProxyData;
 } // namespace MTP
 
-namespace Core {
-class Launcher;
-} // namespace Core
-
 class PreLaunchWindow : public QWidget {
 public:
 	PreLaunchWindow(QString title = QString());
@@ -94,10 +90,7 @@ private:
 class LastCrashedWindow : public PreLaunchWindow {
 
 public:
-	LastCrashedWindow(
-		not_null<Core::Launcher*> launcher,
-		const QByteArray &crashdump,
-		Fn<void()> launch);
+	LastCrashedWindow(const QByteArray &crashdump, Fn<void()> launch);
 
 	rpl::producer<MTP::ProxyData> proxyChanges() const;
 
@@ -137,7 +130,7 @@ private:
 
 	PreLaunchLabel _label, _pleaseSendReport, _yourReportName, _minidump;
 	PreLaunchLog _report;
-	PreLaunchButton _send, _sendSkip, _networkSettings, _continue, _showReport, _saveReport, _getApp;
+	PreLaunchButton /*_send,*/ _sendSkip, _networkSettings, _continue, _showReport, _saveReport, _getApp;
 	PreLaunchCheckbox _includeUsername;
 
 	QString _minidumpName, _minidumpFull, _reportText;

@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
+#include "base/integration.h"
 #include "ui/style/style_core.h"
 
 #define DeclareReadSetting(Type, Name) extern Type g##Name; \
@@ -38,8 +39,6 @@ DeclareSetting(bool, AutoStart);
 DeclareSetting(bool, StartMinimized);
 DeclareSetting(bool, StartInTray);
 DeclareSetting(bool, SendToMenu);
-DeclareSetting(bool, UseExternalVideoPlayer);
-DeclareSetting(bool, UseFreeType);
 enum LaunchMode {
 	LaunchModeNormal = 0,
 	LaunchModeAutoStart,
@@ -51,17 +50,22 @@ DeclareSetting(QString, WorkingDir);
 inline void cForceWorkingDir(const QString &newDir) {
 	cSetWorkingDir(newDir);
 	if (!gWorkingDir.isEmpty()) {
+		cSetWorkingDir(QDir(gWorkingDir).absolutePath() + '/');
 		QDir().mkpath(gWorkingDir);
 		QFile::setPermissions(gWorkingDir,
 			QFileDevice::ReadUser | QFileDevice::WriteUser | QFileDevice::ExeUser);
 	}
 
 }
-DeclareReadSetting(QString, ExeName);
-DeclareReadSetting(QString, ExeDir);
+inline QString cExeName() {
+	return base::Integration::Instance().executableName();
+}
+inline QString cExeDir() {
+	return base::Integration::Instance().executableDir();
+}
 DeclareSetting(QString, DialogLastPath);
 DeclareSetting(QString, DialogHelperPath);
-inline const QString &cDialogHelperPathFinal() {
+inline QString cDialogHelperPathFinal() {
 	return cDialogHelperPath().isEmpty() ? cExeDir() : cDialogHelperPath();
 }
 
@@ -82,8 +86,6 @@ DeclareSetting(bool, Quit);
 DeclareSetting(QByteArray, LocalSalt);
 DeclareSetting(int, ScreenScale);
 DeclareSetting(int, ConfigScale);
-DeclareSetting(QString, DateFormat);
-DeclareSetting(QString, TimeFormat);
 
 class DocumentData;
 
@@ -111,14 +113,6 @@ DeclareSetting(QString, StartUrl);
 
 DeclareSetting(int, OtherOnline);
 
-inline void cChangeDateFormat(const QString &newFormat) {
-	if (!newFormat.isEmpty()) cSetDateFormat(newFormat);
-}
-
-inline void cChangeTimeFormat(const QString &newFormat) {
-	if (!newFormat.isEmpty()) cSetTimeFormat(newFormat);
-}
-
 inline bool passcodeCanTry() {
 	if (cPasscodeBadTries() < 3) return true;
 	auto dt = crl::now() - cPasscodeLastTry();
@@ -130,14 +124,6 @@ inline bool passcodeCanTry() {
 	case 7: return dt >= 25000;
 	}
 	return dt >= 30000;
-}
-
-inline float64 cRetinaFactor() {
-	return style::DevicePixelRatio();
-}
-
-inline int32 cIntRetinaFactor() {
-	return style::DevicePixelRatio();
 }
 
 inline int cEvalScale(int scale) {
@@ -158,60 +144,71 @@ inline void ValidateScale() {
 }
 
 DeclareSetting(bool, EnhancedFirstRun);
-DeclareSetting(bool, ShowMessagesID);
-DeclareSetting(bool, ShowEmojiButtonAsText);
-DeclareSetting(bool, ShowRepeaterOption);
-DeclareSetting(bool, RepeaterReplyToOrigMsg);
-DeclareSetting(bool, DisableCloudDraftSync);
-DeclareSetting(bool, HideClassicFwd);
-DeclareSetting(bool, ShowPhoneNumber);
-DeclareSetting(bool, ShowScheduledButton);
-DeclareSetting(bool, HideFilterAllChats);
-DeclareSetting(bool, StereoMode);
-DeclareSetting(bool, AutoUnmute);
 DeclareSetting(bool, VoiceChatPinned);
-DeclareSetting(bool, HDVideo);
-DeclareSetting(bool, SkipSc);
-DeclareSetting(bool, DisableLinkWarning);
-DeclareSetting(QString, RadioController);
+DeclareSetting(QList<int64>, BlockList);
+typedef QHash<QString, QVariant> EnhancedSetting;
+DeclareSetting(EnhancedSetting, EnhancedOptions);
 
-DeclareSetting(int, NetSpeedBoost);
 DeclareSetting(int, NetRequestsCount);
 DeclareSetting(int, NetUploadSessionsCount);
 DeclareSetting(int, NetUploadRequestInterval);
-DeclareSetting(int, AlwaysDeleteFor);
-DeclareSetting(int, VoiceChatBitrate);
+
+inline bool GetEnhancedBool(const QString& key) {
+	if (!gEnhancedOptions.contains(key)) {
+		return false;
+	}
+	return gEnhancedOptions[key].toBool();
+}
+
+inline int GetEnhancedInt(const QString& key) {
+	if (!gEnhancedOptions.contains(key)) {
+		return 0;
+	}
+	return gEnhancedOptions[key].toInt();
+}
+
+inline QString GetEnhancedString(const QString& key) {
+	if (!gEnhancedOptions.contains(key)) {
+		return {};
+	}
+	return gEnhancedOptions[key].toString();
+}
+
+inline void SetEnhancedValue(const QString& key, const QVariant& value) {
+	gEnhancedOptions.insert(key, value);
+}
 
 inline void SetNetworkBoost(int boost) {
 	if (boost < 0) {
-		cSetNetSpeedBoost(0);
+		gEnhancedOptions.insert("net_speed_boost", 0);
 	} else if (boost > 3) {
-		cSetNetSpeedBoost(3);
+		gEnhancedOptions.insert("net_speed_boost", 3);
 	} else {
-		cSetNetSpeedBoost(boost);
+		gEnhancedOptions.insert("net_speed_boost", boost);
 	}
 
-	cSetNetRequestsCount(2 + (2 * cNetSpeedBoost()));
-	cSetNetUploadSessionsCount(2 + (2 * cNetSpeedBoost()));
-	cSetNetUploadRequestInterval(500 - (100 * cNetSpeedBoost()));
+	cSetNetRequestsCount(2 + (2 * GetEnhancedInt("net_speed_boost")));
+	cSetNetUploadSessionsCount(2 + (2 * GetEnhancedInt("net_speed_boost")));
+	cSetNetUploadRequestInterval(500 - (100 * GetEnhancedInt("net_speed_boost")));
 }
 
-inline void SetAlwaysDelete(int option) {
- 	if (option < 0) {
- 	 	cSetAlwaysDeleteFor(0);
- 	} else if (option > 3) {
- 	 	cSetAlwaysDeleteFor(3);
- 	} else {
- 	 	cSetAlwaysDeleteFor(option);
- 	}
+inline bool blockExist(int64 id) {
+	if (cBlockList().contains(id)) {
+		return true;
+	}
+	return false;
 }
 
-inline void SetBitrate(int option) {
-	if (option < 0) {
-		cSetVoiceChatBitrate(0);
-	} else if (option > 7) {
-		cSetVoiceChatBitrate(7);
-	} else {
-		cSetVoiceChatBitrate(option);
+inline void loadSettings(QJsonObject settings) {
+	for (const auto & key : settings.keys()) {
+		if (settings[key].type() == QJsonValue::Bool) {
+			gEnhancedOptions.insert(key, settings[key].toBool());
+		}
+		else if (settings[key].type() == QJsonValue::Double) {
+			gEnhancedOptions.insert(key, settings[key].toInt());
+		}
+		else if (settings[key].type() == QJsonValue::String) {
+			gEnhancedOptions.insert(key, settings[key].toString());
+		}
 	}
 }
